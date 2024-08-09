@@ -1,0 +1,93 @@
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+
+const char* ssid = "realme 9 Pro+"; // Your Wi-Fi SSID
+const char* password = "12345098";  // Your Wi-Fi password
+
+ESP8266WebServer server(80);
+
+int motorPin1 = D1; // First pin for motor control
+int motorPin2 = D2; // Second pin for motor control
+
+void setup() {
+  pinMode(motorPin1, OUTPUT);
+  pinMode(motorPin2, OUTPUT);
+
+  Serial.begin(115200); // Initialize serial communication
+  delay(1000); // Allow time for serial monitor to connect
+  Serial.println("Connecting to WiFi...");
+
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP()); // Display NodeMCU's IP address
+
+  // Start the server with proper CORS headers to avoid cross-origin issues
+  server.on("/runMotor1", []() {
+    server.sendHeader("Access-Control-Allow-Origin", "*");
+    handleRunMotor1();
+  });
+
+  server.on("/runMotor2", []() {
+    server.sendHeader("Access-Control-Allow-Origin", "*");
+    handleRunMotor2();
+  });
+
+  server.on("/runMotor3", []() {
+    server.sendHeader("Access-Control-Allow-Origin", "*");
+    handleRunMotor3();
+  });
+
+  server.begin(); // Start the server
+  Serial.println("HTTP server started");
+}
+
+void loop() {
+  server.handleClient(); // Handle incoming client requests
+}
+
+// Motor control functions
+void handleRunMotor1() {
+  digitalWrite(motorPin1, HIGH);
+  digitalWrite(motorPin2, LOW);
+  delay(2000);
+  digitalWrite(motorPin1, LOW);
+  digitalWrite(motorPin2, LOW);
+  delay(2000);
+  digitalWrite(motorPin2, HIGH);
+  delay(2000);
+  digitalWrite(motorPin2, LOW);
+  server.send(200, "text/plain", "Motor sequence completed for Button 1");
+}
+
+void handleRunMotor2() {
+  digitalWrite(motorPin1, HIGH);
+  digitalWrite(motorPin2, LOW);
+  delay(4000);
+  digitalWrite(motorPin1, LOW);
+  digitalWrite(motorPin2, LOW);
+  delay(2000);
+  digitalWrite(motorPin2, HIGH);
+  delay(4000);
+  digitalWrite(motorPin2, LOW);
+  server.send(200, "text/plain", "Motor sequence completed for Button 2");
+}
+
+void handleRunMotor3() {
+  digitalWrite(motorPin1, HIGH);
+  digitalWrite(motorPin2, LOW);
+  delay(6000);
+  digitalWrite(motorPin1, LOW);
+  digitalWrite(motorPin2, LOW);
+  delay(2000);
+  digitalWrite(motorPin2, HIGH);
+  delay(6000);
+  digitalWrite(motorPin2, LOW);
+  server.send(200, "text/plain", "Motor sequence completed for Button 3");
+}
