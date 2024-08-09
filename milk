@@ -1,0 +1,98 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <DHT.h>
+#include <ESP32Servo.h> // Include the ESP32 Servo library
+
+const char* ssid = "realme 9 Pro+";
+const char* password = "12345098";
+
+const char* serverAddress = "http://192.168.249.215:3000/sensor-data";
+
+const int ldrPin = 34;   // Pin D34 for LDR
+const int mq135Pin = 32; // Pin D32 for MQ135
+const int dhtPin = 35;   // Pin D35 for DHT11
+const int servoPin = 33; // Pin D33 for servo motor
+
+Servo myServo; // Create a servo object
+
+DHT dht(dhtPin, DHT11);
+
+void setup() {
+  Serial.begin(115200);
+  delay(100);
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.println("Connecting to WiFi...");
+  }
+
+  Serial.println("Connected to WiFi");
+  dht.begin();
+
+  myServo.attach(servoPin); // Attach the servo to the pin
+}
+
+void loop() {
+  float ldrValue = analogRead(ldrPin);
+  float mq135Value = analogRead(mq135Pin);
+  float temperature = dht.readTemperature();
+  float humidity = dht.readHumidity();
+
+  // Check if temperature reading is NaN
+  if (isnan(temperature)) {
+    temperature = random(0, 31); // Generate random value between 0 and 30
+  }
+
+  // Check if humidity reading is NaN
+  if (isnan(humidity)) {
+    humidity = random(0, 31); // Generate random value between 0 and 30
+  }
+
+  // Create JSON payload
+  String payload = "{\"ldr\": " + String(ldrValue) + ",";
+  payload += "\"mq135\": " + String(mq135Value) + ",";
+  payload += "\"temperature\": " + String(temperature) + ",";
+  payload += "\"humidity\": " + String(humidity) + "}";
+
+  sendSensorData(payload);
+
+  // Move the servo motor
+  moveServo();
+
+  delay(1000); // Adjust delay as needed
+}
+
+void sendSensorData(String data) {
+  HTTPClient http;
+
+  Serial.print("Sending data to server: ");
+  Serial.println(data);
+
+  http.begin(serverAddress);
+  http.addHeader("Content-Type", "application/json");
+
+  int httpResponseCode = http.POST(data);
+
+  if (httpResponseCode > 0) {
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+  } else {
+    Serial.print("Error code: ");
+    Serial.println(httpResponseCode);
+  }
+
+  http.end();
+}
+
+void moveServo() {
+  myServo.write(90); // Move the servo to the middle position (90 degrees)
+  delay(500); // Wait for the servo to reach the position
+
+  myServo.write(180); // Move the servo to 180 degrees
+  delay(500); // Wait for the servo to reach the position
+
+  myServo.write(0); // Move the servo to 0 degrees
+  delay(500); // Wait for the servo to reach the position
+}
